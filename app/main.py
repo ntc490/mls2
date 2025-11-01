@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from . import database, fuzzy, sms
@@ -8,35 +8,44 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
-# Home: list open threads
+@app.on_event("startup")
+def startup():
+    database.init()
+    database.import_contacts()
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     threads = database.get_open_threads()
     return templates.TemplateResponse("index.html", {"request": request, "threads": threads})
 
-# Slash command handler
 @app.post("/command")
 async def command(cmd: str = Form(...)):
-    response = ""
+    cmd = cmd.strip()
+    output = ""
     if cmd.startswith("/new"):
-        _, *terms = cmd.split()
-        if not terms:
-            response = "Usage: /new [name or appointment]"
+        _, *args = cmd.split()
+        if not args:
+            output = "Usage: /new [name or part of name] [appointment type]"
         else:
-            matches = fuzzy.search_combined(" ".join(terms))
-            if matches:
-                response = "Found: " + ", ".join(matches[:5])
+            text = " ".join(args)
+            matches = fuzzy.fuzzy_search_name(text)
+            if not matches:
+                output = f"No matches for '{text}'."
             else:
-                response = "No matches."
-    elif cmd.startswith("/reply"):
-        response = "Reply feature not implemented yet."
-    elif cmd.startswith("/close"):
-        response = "Thread closed (simulated)."
+                name = matches[0]
+                phone = fuzzy.resolve_contact(name)
+                if phone:
+                    database.create_thread(phone, "Appointment")
+                    output = f"✅ Created new thread with {name} ({phone})"
+                else:
+                    output = f"Could not resolve contact for {name}."
+    elif cmd == "/import":
+        database.import_contacts()
+        output = "Contacts imported."
     else:
-        response = "Unknown command."
-    return {"output": response}
+        output = f"Unknown command: {cmd}"
+    return {"output": output}
 
-# Endpoint for SMS gateway (incoming messages)
 @app.post("/incoming")
 async def incoming_sms(request: Request):
     data = await request.json()
