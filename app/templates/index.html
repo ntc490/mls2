@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/script.js" defer></script>
+</head>
+<body>
+  <div id="container">
+    <div id="left-pane">
+      <h3>🧵 Threads</h3>
+      <ul id="threads">
+        {% for t in threads %}
+          <li>#{{t['id']}} — {{t['appointment_type'] or 'Unknown'}}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div id="right-pane">
+      <div id="terminal-output"></div>
+      <form id="cmd-form">
+        <input id="cmd" name="cmd" placeholder="/new john prayer" autofocus />
+      </form>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,25 @@
+body {
+  background: #111;
+  color: #eee;
+  font-family: monospace;
+  display: flex;
+  height: 100vh;
+  margin: 0;
+}
+#container { display: flex; flex: 1; }
+#left-pane, #right-pane {
+  flex: 1;
+  padding: 1em;
+  border-right: 1px solid #333;
+  overflow-y: auto;
+}
+#cmd {
+  width: 100%;
+  background: #222;
+  color: #0f0;
+  border: none;
+  padding: 0.5em;
+}
+#terminal-output div {
+  margin: 0.25em 0;
+}
